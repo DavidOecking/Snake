@@ -7,6 +7,8 @@
 #define EMPTY 0
 #define SNAKE 1
 #define FOOD 2
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 640
 
 typedef enum {
     UP, RIGHT, DOWN, LEFT
@@ -123,8 +125,33 @@ void update_game_state(GameState* state){
 
 }
 
-void render(GameState* gameState){
+void render(GameState* state, SDL_Renderer* gRenderer){
+    SDL_SetRenderDrawColor( gRenderer, 0xb1, 0xab, 0xb3, 255 ); 
+    SDL_RenderClear( gRenderer );
 
+    int cellHeight = SCREEN_HEIGHT / state->dimension;
+    int cellWidth = SCREEN_WIDTH / state->dimension; 
+
+    for(int i = 0; i<state->numOfFields; i++){
+        int column = i % state->dimension;
+        int row = i / state->dimension;
+
+        SDL_Rect fillRect = { cellWidth * column, cellHeight * row, cellWidth, cellHeight}; 
+        switch(state->board[i]){
+            case EMPTY:
+                break;
+            case SNAKE:
+                SDL_SetRenderDrawColor( gRenderer, 0x17, 0x4f, 0x26, 255 ); 
+                SDL_RenderFillRect( gRenderer, &fillRect );
+                break;
+            case FOOD:
+                SDL_SetRenderDrawColor( gRenderer, 0x94, 0x27, 0x09, 255 ); 
+                SDL_RenderFillRect( gRenderer, &fillRect );
+                break;
+        }
+    }
+
+    SDL_RenderPresent(gRenderer);
 };
 
 void renderAscii(GameState* gameState){
@@ -136,6 +163,13 @@ void renderAscii(GameState* gameState){
     }
     printf("\n");
 };
+
+/*
+TODO
+Add Pause and Victory Screen
+Add Option to Restart Game
+Make sure Game Start is possible
+*/
 
 int main(int argc, char** argv){
     srand((unsigned int)time(NULL));
@@ -151,15 +185,17 @@ int main(int argc, char** argv){
 
     SDL_Window *win = SDL_CreateWindow(
         "Snake", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        640, 480, SDL_WINDOW_SHOWN
+        SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN
     );
+
+    SDL_Renderer *gRenderer = SDL_CreateRenderer( win, -1, SDL_RENDERER_ACCELERATED );
     
     Dir dir = UP;
     bool running = true;   
 
     Uint32 last_tick = SDL_GetTicks();
     Uint32 frame_time = 0;
-    const Uint32 STEP_MS = 1000;
+    const Uint32 STEP_MS = 150;
 
     GameState state;
     state.dimension = dimension;
@@ -220,12 +256,9 @@ int main(int argc, char** argv){
                     printf("Game lost. Score: %d.", state.length);
                 }
                 break;
-            }else{
-                renderAscii(&state);
             }
         }
-
-        render(&state);
+        render(&state, gRenderer);
     }
 
     SDL_DestroyWindow(win);
